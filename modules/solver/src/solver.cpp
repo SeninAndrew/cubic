@@ -125,6 +125,7 @@ public:
     Mat getStateByPlanes(Mat yellowPlane, Mat bluePlane, Mat redPlane, Mat whitePlane, Mat greenPlane, Mat orangePlane)
     {
         Mat state(stateDim, 1, CV_32SC1);
+        Mat planes[] = {yellowPlane, bluePlane, redPlane, whitePlane, greenPlane, orangePlane};
 
         for (int i = 0; i < dimension; i++)
         {
@@ -132,18 +133,33 @@ public:
             {
                 for (int k = 0; k < dimension; k++)
                 {
+                    int posIndex = getCubeIndex(i, j, k);
 
+                    int indexes[3] = {i, j, k};
+                    vector<int> cube(indexes, indexes + 3);
+
+                    set<Color> planeColors = cubeToPlanes[cube];
+                    set<Color> actualColors;
+
+                    for_each(planeColors.begin(), planeColors.end(), 
+                    [&, this](Color c)
+                    {
+                        int axis = getAxisByColor(c);
+                        cv::Point point = this->getPlanePoint(axis, i, j, k);
+                        actualColors.insert((Color)planes[c].at<int>(point));
+                    });
+
+                    int cubeIndex = getCubeIndex(planesToCube[actualColors]);
+                    state.at<int>(posIndex) = cubeIndex;
                 }
             }
         }
 
-        //Create map (i,j,k) -> indexes in the color matrixes
-
-        //for_each cube -> ceate set of colors -> find real index of the cube
-
         //Check resulting state has all cubes
 
         //Check there are no dublicates of the cubes in the state matrix
+
+        return state;
     }
 
     /*!
@@ -209,6 +225,10 @@ public:
     {
         return d3 + d2 * dimension + d1 * dimension * dimension;
     }
+    inline int getCubeIndex(vector<int> indexes)
+    {
+        return getCubeIndex(indexes[0], indexes[1], indexes[2]);
+    }
 
     //For each vector, plane index: rotation matrix
     vector<vector<Mat > > rotMats;
@@ -220,7 +240,7 @@ public:
     //dimension ^3
     int stateDim;
 
-    inline Color getPlaneByAxis(int axis, int index)
+    inline CubicSolver::Color getPlaneByAxis(int axis, int index)
     {
         vector<Color> colors(dimension, NO_COLOR);
 
@@ -241,6 +261,47 @@ public:
         }
 
         return colors[index];
+    }
+
+    inline int getAxisByColor(CubicSolver::Color color)
+    {
+        switch (color)
+        {
+        case YELLOW:
+            return 0;
+            break;
+        case BLUE:
+            return 1;
+            break;
+        case RED:
+            return 2;
+            break;
+        case WHITE:
+            return 0;
+            break;
+        case GREEN:
+            return 1;
+            break;
+        case ORANGE:
+            return 2;
+            break;
+        }
+    }
+
+    cv::Point getPlanePoint(int axis, int i, int j, int k)
+    {
+        switch (axis)
+        {
+        case 0:
+            return Point(j,k);
+            break;
+        case 1 :
+            return Point(i,k);
+            break;
+        case 2:
+            return Point(i,j);
+            break;
+        }
     }
 
     //From index of cube to set of colors
@@ -296,5 +357,5 @@ float CubicSolver::getWeight(cv::Mat stateCubes)
 
 Mat CubicSolver::getStateByPlanes(Mat yellowPlane, Mat bluePlane, Mat redPlane, Mat whitePlane, Mat greenPlane, Mat orangePlane)
 {
-    return CubicSolverImpl::ggetStateByPlanes(yellowPlane, bluePlane, redPlane, whitePlane, greenPlane, orangePlane);
+    return this->impl->getStateByPlanes(yellowPlane, bluePlane, redPlane, whitePlane, greenPlane, orangePlane);
 }

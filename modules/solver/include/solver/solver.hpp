@@ -27,7 +27,7 @@ public:
     //
     cv::Mat Solve(cv::Mat stateCubes);
 
-    static cv::Mat getStateByPlanes(cv::Mat yellowPlane, cv::Mat bluePlane, cv::Mat redPlane, cv::Mat whitePlane, cv::Mat greenPlane, cv::Mat orangePlane);
+    cv::Mat getStateByPlanes(cv::Mat yellowPlane, cv::Mat bluePlane, cv::Mat redPlane, cv::Mat whitePlane, cv::Mat greenPlane, cv::Mat orangePlane);
 
     float getWeight(cv::Mat stateCubes);
 
