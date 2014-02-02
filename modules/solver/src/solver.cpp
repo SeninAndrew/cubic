@@ -1,6 +1,8 @@
 #include "solver.hpp"
 #include <iostream>
 #include <vector>
+#include <map>
+#include <set>
 
 using namespace std;
 using namespace cv;
@@ -13,25 +15,11 @@ public:
         dimension = 3;
         stateDim = dimension * dimension * dimension;
         initRotMats();
+        createCubeToPlanesMap();
     }
 
     void initRotMats()
     {
-        //int counter = 0;
-        //vector<vector<vector<int > > > cubeIndexes(dimension);
-        //for (int i = 0; i < dimension; i++)
-        //{
-        //    cubeIndexes[i].resize(dimension);
-        //    for (int j = 0; j < dimension; j++)
-        //    {
-        //        cubeIndexes[i][j].resize(dimension);
-        //        for (int k = 0; k < dimension; k++)
-        //        {
-        //            cubeIndexes[i][j][k] = counter++;
-        //        }
-        //    }
-        //}
-
         rotMats.resize(3);
         for (int v = 0; v < 3; v++)
         {
@@ -53,7 +41,7 @@ public:
 
         for (int i = 0; i < stateCubes.rows; i++)
         {
-            if (stateCubes.at<unsigned char>(i) != i)
+            if (stateCubes.at<int>(i) != i)
             {
                 sum += 1;
             }
@@ -74,10 +62,10 @@ public:
         vector<int > nextMove(maxDepth, 0);
 
         //Best rotation and weight at the moment
-        pair<Mat, float> best(Mat::eye(stateDim, stateDim, CV_8UC1), getWeight(stateCubes));
+        pair<Mat, float> best(Mat::eye(stateDim, stateDim, CV_32SC1), getWeight(stateCubes));
         
         //On the first depth we start from the eye rotation matrix (no rotation)
-        rotations[depth] = Mat::eye(stateDim, stateDim, CV_8UC1);
+        rotations[depth] = Mat::eye(stateDim, stateDim, CV_32SC1);
 
         while (true)
         {  
@@ -134,9 +122,20 @@ public:
         return best.first;
     }
 
-    static Mat StateByPlanes(Mat yellowPlane, Mat bluePlane, Mat redPlane, Mat whitePlane, Mat greenPlane, Mat orangePlane)
+    Mat getStateByPlanes(Mat yellowPlane, Mat bluePlane, Mat redPlane, Mat whitePlane, Mat greenPlane, Mat orangePlane)
     {
-        //Create map (i,j,k) - indexes of cube -> set of colors
+        Mat state(stateDim, 1, CV_32SC1);
+
+        for (int i = 0; i < dimension; i++)
+        {
+            for (int j = 0; j < dimension; j++)
+            {
+                for (int k = 0; k < dimension; k++)
+                {
+
+                }
+            }
+        }
 
         //Create map (i,j,k) -> indexes in the color matrixes
 
@@ -147,10 +146,9 @@ public:
         //Check there are no dublicates of the cubes in the state matrix
     }
 
-protected:
-
-private:
-
+    /*!
+     * /brief Get indexes of rubic plane
+     */
     Mat getPlane(int fixedDim, int planeIndex)
     {
         Mat plane(dimension, dimension, CV_32SC1);
@@ -216,9 +214,70 @@ private:
     vector<vector<Mat > > rotMats;
     vector<Mat > rotMatsSeq;
 
+    //3
     int dimension;
+
+    //dimension ^3
     int stateDim;
+
+    inline Color getPlaneByAxis(int axis, int index)
+    {
+        vector<Color> colors(dimension, NO_COLOR);
+
+        switch (axis)
+        {
+        case 0:
+            colors[0] = YELLOW;
+            colors[2] = WHITE;
+            break;
+        case 1:
+            colors[0] = BLUE;
+            colors[2] = GREEN;
+            break;
+        case 2:
+            colors[0] = RED;
+            colors[2] = ORANGE;
+            break;
+        }
+
+        return colors[index];
+    }
+
+    //From index of cube to set of colors
+    map<vector<int>, set<CubicSolver::Color> > cubeToPlanes;
+    map<set<CubicSolver::Color>, vector<int> > planesToCube;
+
+    void createCubeToPlanesMap();
 };
+
+void CubicSolver::CubicSolverImpl::createCubeToPlanesMap()
+{
+    for (int i = 0; i < dimension; i++)
+    {
+        for (int j = 0; j < dimension; j++)
+        {
+            for (int k = 0; k < dimension; k++)
+            {
+                //Find corresponding color planes
+                int indexes[3] = {i,j,k};
+                vector<int> cube(indexes, indexes+3);
+
+                set<CubicSolver::Color> colors;
+                for (int ci = 0; ci < 3; ci++)
+                {
+                    CubicSolver::Color c = getPlaneByAxis(ci, cube[ci]);
+                    if (c != NO_COLOR)
+                    {
+                        colors.insert(c);
+                    }
+                }
+
+                cubeToPlanes[cube] = colors;
+                planesToCube[colors] = cube;
+            }
+        }
+    }
+}
 
 CubicSolver::CubicSolver()
 {
@@ -235,7 +294,7 @@ float CubicSolver::getWeight(cv::Mat stateCubes)
     return this->impl->getWeight(stateCubes);
 }
 
-Mat CubicSolver::GetStateByPlanes(Mat yellowPlane, Mat bluePlane, Mat redPlane, Mat whitePlane, Mat greenPlane, Mat orangePlane)
+Mat CubicSolver::getStateByPlanes(Mat yellowPlane, Mat bluePlane, Mat redPlane, Mat whitePlane, Mat greenPlane, Mat orangePlane)
 {
-    return CubicSolverImpl::StateByPlanes(yellowPlane, bluePlane, redPlane, whitePlane, greenPlane, orangePlane);
+    return CubicSolverImpl::ggetStateByPlanes(yellowPlane, bluePlane, redPlane, whitePlane, greenPlane, orangePlane);
 }
