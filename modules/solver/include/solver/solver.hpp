@@ -31,6 +31,8 @@ public:
 
     float getWeight(cv::Mat stateCubes);
 
+    cv::Mat askUserCubicState();
+
 private:
     class CubicSolverImpl;
 

@@ -359,3 +359,8 @@ Mat CubicSolver::getStateByPlanes(Mat yellowPlane, Mat bluePlane, Mat redPlane, 
 {
     return this->impl->getStateByPlanes(yellowPlane, bluePlane, redPlane, whitePlane, greenPlane, orangePlane);
 }
+
+Mat CubicSolver::askUserCubicState()
+{
+
+}
